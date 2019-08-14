@@ -52,7 +52,7 @@ fn decode(code: u8) -> (Opcode, u8) {
     }
 }
 
-fn execute(register: &mut Register, port: Port, rom: Rom) {
+fn execute(register: &mut Register, port: &mut Port, rom: Rom) {
     let code = fetch(register, rom);
     let (op, im) = decode(code);
 
@@ -72,19 +72,83 @@ fn execute(register: &mut Register, port: Port, rom: Rom) {
     };
 }
 
-fn add_a(register: &mut Register, im: u8) {}
-fn add_b(register: &mut Register, im: u8) {}
-fn mov_a(register: &mut Register, im: u8) {}
-fn mov_b(register: &mut Register, im: u8) {}
-fn mov_ab(register: &mut Register) {}
-fn mov_ba(register: &mut Register) {}
-fn jmp(register: &mut Register, im: u8) {}
-fn jmc(register: &mut Register, im: u8) {}
-fn in_a(register: &mut Register, port: Port) {}
-fn in_b(register: &mut Register, port: Port) {}
-fn out(register: &mut Register, port: Port, im: u8) {}
-fn out_b(register: &mut Register, port: Port) {}
+fn add(register: &mut Register, l: u8, m: u8) -> u8 {
+    let n = l + m;
+    if n > 0x0f {
+        register.c = 1;
+    }
+    n & 0x0f
+}
+
+fn add_a(register: &mut Register, im: u8) {
+    register.a = add(register, register.a, im);
+}
+
+fn add_b(register: &mut Register, im: u8) {
+    register.b = add(register, register.b, im);
+}
+
+fn mov_a(register: &mut Register, im: u8) {
+    register.a = im;
+    register.c = 0;
+}
+
+fn mov_b(register: &mut Register, im: u8) {
+    register.b = im;
+    register.c = 0;
+}
+
+fn mov_ab(register: &mut Register) {
+    register.a = register.b;
+    register.c = 0;
+}
+
+fn mov_ba(register: &mut Register) {
+    register.b = register.a;
+    register.c = 0;
+}
+
+fn jmp(register: &mut Register, im: u8) {
+    register.pc = im;
+    register.c = 0;
+}
+
+fn jmc(register: &mut Register, im: u8) {
+    if register.c == 0 {
+        register.pc = im;
+    }
+    register.c = 0;
+}
+
+fn in_a(register: &mut Register, port: &mut Port) {
+    register.a = port.i;
+    register.c = 0;
+}
+
+fn in_b(register: &mut Register, port: &mut Port) {
+    register.b = port.i;
+    register.c = 0;
+}
+
+fn out(register: &mut Register, port: &mut Port, im: u8) {
+    port.o = im;
+    register.c = 0;
+}
+
+fn out_b(register: &mut Register, port: &mut Port) {
+    port.o = register.b;
+    register.c = 0;
+}
 
 fn main() {
-    println!("Hello, world!");
+    let register = &mut Register {
+        a: 0,
+        b: 0,
+        c: 0,
+        pc: 0,
+    };
+    let port = &mut Port { i: 0, o: 0 };
+    let rom = Rom { vec: vec![16] };
+
+    execute(register, port, rom);
 }
